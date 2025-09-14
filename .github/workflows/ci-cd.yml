@@ -3,11 +3,11 @@ name: Full CI/CD Pipeline - Backend + Frontend
 on:
   push:
     branches:
-      - development
+      - development   # Run on pushes to development
   pull_request:
     branches:
-      - main
-  workflow_dispatch:
+      - main          # Run on PRs into main
+  workflow_dispatch:   # Manual trigger option
 
 env:
   ACR_LOGIN_SERVER: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
@@ -72,10 +72,22 @@ jobs:
 
       - name: Run product_service tests
         working-directory: backend/product_service
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: products
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         run: pytest tests --maxfail=1 --disable-warnings -q
 
       - name: Run order_service tests
         working-directory: backend/order_service
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5433
+          POSTGRES_DB: orders
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         run: pytest tests --maxfail=1 --disable-warnings -q
 
   # -----------------------------
@@ -122,7 +134,6 @@ jobs:
       image_tag: ${{ github.sha }}
     secrets:
      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-
   # -----------------------------
   # 4. Frontend - Build & Push Image
   # -----------------------------
@@ -169,4 +180,3 @@ jobs:
       image_tag: ${{ github.sha }}
     secrets:
      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-#test
