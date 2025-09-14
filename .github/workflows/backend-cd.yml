@@ -1,26 +1,7 @@
 name: CD - Deploy Backend Services to AKS
 
 on:
-  workflow_dispatch:
-    inputs:
-      aks_cluster_name:
-        description: 'Name of the AKS Cluster to deploy to'
-        required: true
-        default: 'sit722-aks'
-      aks_resource_group:
-        description: 'Resource Group of the AKS Cluster'
-        required: true
-        default: 'sit722-rg'
-      aks_acr_name:
-        description: 'Name of ACR'
-        required: true
-        default: 'sit722acr9'
-      image_tag:
-        description: 'Tag of the Docker image to deploy'
-        required: true
-        default: 'latest'
-
-  workflow_call:
+  workflow_call: # Only callable from backend-ci
     inputs:
       aks_cluster_name:
         required: true
@@ -45,78 +26,40 @@ jobs:
       ORDER_API_IP: ${{ steps.get_order_ip.outputs.external_ip }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Log in to Azure
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          enable-AzPSSession: true
 
-      - name: Set Kubernetes context (get AKS credentials)
+      - name: Set Kubernetes context
         run: |
-          az aks get-credentials --resource-group ${{ github.event.inputs.aks_resource_group || inputs.aks_resource_group }} \
-                                 --name ${{ github.event.inputs.aks_cluster_name || inputs.aks_cluster_name }} \
+          az aks get-credentials --resource-group ${{ inputs.aks_resource_group }} \
+                                 --name ${{ inputs.aks_cluster_name }} \
                                  --overwrite-existing
 
-      - name: Attach ACR
+      - name: Deploy Backend Infrastructure
         run: |
-          az aks update --name ${{ github.event.inputs.aks_cluster_name || inputs.aks_cluster_name }} \
-                        --resource-group ${{ github.event.inputs.aks_resource_group || inputs.aks_resource_group }} \
-                        --attach-acr ${{ github.event.inputs.aks_acr_name || inputs.aks_acr_name }}
-
-      - name: Deploy Backend Infrastructure (Namespace, ConfigMaps, Secrets, Databases)
-        run: |
-          echo "Deploying backend infrastructure..."
-          cd k8s/
-          kubectl apply -f configmaps.yaml
-          kubectl apply -f secrets.yaml
-          kubectl apply -f product-db.yaml
-          kubectl apply -f order-db.yaml
+          kubectl apply -f k8s/configmaps.yaml
+          kubectl apply -f k8s/secrets.yaml
+          kubectl apply -f k8s/product-db.yaml
+          kubectl apply -f k8s/order-db.yaml
 
       - name: Deploy Backend Microservices
         run: |
-          echo "Deploying backend microservices..."
-          cd k8s/
-          kubectl apply -f product-service.yaml
-          kubectl apply -f order-service.yaml
+          kubectl apply -f k8s/product-service.yaml
+          kubectl apply -f k8s/order-service.yaml
 
       - name: Update Backend Images with Correct Tag
         run: |
-          echo "Updating product and order images to tag: ${{ github.event.inputs.image_tag || inputs.image_tag }}"
           kubectl set image deployment/product-service \
-            product-service=sit722acr9.azurecr.io/product_service:${{ github.event.inputs.image_tag || inputs.image_tag }} -n default
-
+            product-service=${{ inputs.aks_acr_name }}.azurecr.io/product_service:${{ inputs.image_tag }} -n default
           kubectl set image deployment/order-service \
-            order-service=sit722acr9.azurecr.io/order_service:${{ github.event.inputs.image_tag || inputs.image_tag }} -n default
+            order-service=${{ inputs.aks_acr_name }}.azurecr.io/order_service:${{ inputs.image_tag }} -n default
 
-      - name: Wait for Backend LoadBalancer IPs
-        run: |
-          echo "Waiting for Product, Order LoadBalancer IPs to be assigned..."
-          PRODUCT_IP=""
-          ORDER_IP=""
-          for i in $(seq 1 60); do
-            PRODUCT_IP=$(kubectl get service product-service-w08e1 -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-            ORDER_IP=$(kubectl get service order-service-w08e1 -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-            if [[ -n "$PRODUCT_IP" && -n "$ORDER_IP" ]]; then
-              echo "All backend LoadBalancer IPs assigned!"
-              echo "Product Service IP: $PRODUCT_IP"
-              echo "Order Service IP: $ORDER_IP"
-              break
-            fi
-            sleep 5
-          done
-          echo "PRODUCT_IP=$PRODUCT_IP" >> $GITHUB_ENV
-          echo "ORDER_IP=$ORDER_IP" >> $GITHUB_ENV
+      - id: get_product_ip
+        run: echo "external_ip=$(kubectl get service product-service-w08e1 -o jsonpath='{.status.loadBalancer.ingress[0].ip}')" >> $GITHUB_OUTPUT
 
-      - name: Capture Product Service IP for Workflow Output
-        id: get_product_ip
-        run: echo "external_ip=${{ env.PRODUCT_IP }}" >> $GITHUB_OUTPUT
-
-      - name: Capture Order Service IP for Workflow Output
-        id: get_order_ip
-        run: echo "external_ip=${{ env.ORDER_IP }}" >> $GITHUB_OUTPUT
-
-      - name: Logout from Azure
-        run: az logout
+      - id: get_order_ip
+        run: echo "external_ip=$(kubectl get service order-service-w08e1 -o jsonpath='{.status.loadBalancer.ingress[0].ip}')" >> $GITHUB_OUTPUT
