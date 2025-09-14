@@ -125,3 +125,4 @@ jobs:
       aks_resource_group: sit722-rg
       aks_acr_name: sit722acr9
       image_tag: ${{ github.sha }}
+#test
