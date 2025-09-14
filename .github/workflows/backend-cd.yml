@@ -58,8 +58,8 @@ jobs:
 
       - name: Update Backend Images
         run: |
-          kubectl set image deployment/product-service-w08e1 product-service=sit722acr9.azurecr.io/product_service:${{ inputs.image_tag }}
-          kubectl set image deployment/order-service-w08e1 order-service=sit722acr9.azurecr.io/order_service:${{ inputs.image_tag }}
+          kubectl set image deployment/product-service-w08e1 product-service-container=${{ inputs.aks_acr_name }}.azurecr.io/product_service:${{ inputs.image_tag }}
+          kubectl set image deployment/order-service-w08e1 order-service-container=${{ inputs.aks_acr_name }}.azurecr.io/order_service:${{ inputs.image_tag }}
 
 
       - name: Get Product Service IP
