@@ -128,7 +128,7 @@ jobs:
     needs: build_backend_images
     uses: ./.github/workflows/backend-cd.yml
     with:
-      aks_cluster_name: sit722-aks
+      aks_cluster_name: sit722wk09aks
       aks_resource_group: sit722-rg
       aks_acr_name: sit722acr9
       image_tag: ${{ github.sha }}
