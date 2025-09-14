@@ -18,6 +18,9 @@ on:
       image_tag:
         required: true
         type: string
+    secrets:                           # 👈 Add this block
+      AZURE_CREDENTIALS:
+        required: true
 
 jobs:
   deploy_frontend:
