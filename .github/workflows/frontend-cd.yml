@@ -18,7 +18,7 @@ on:
       image_tag:
         required: true
         type: string
-    secrets:                           # 👈 Add this block
+    secrets:
       AZURE_CREDENTIALS:
         required: true
 
@@ -35,16 +35,6 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Inject Backend IPs into frontend config
-        run: |
-          sed -i "s|_PRODUCT_API_URL_|${{ inputs.product_api_ip }}|g" frontend/main.js
-          sed -i "s|_ORDER_API_URL_|${{ inputs.order_api_ip }}|g" frontend/main.js
-
-      - name: Build and Push Frontend Image
-        run: |
-          docker build -t ${{ secrets.AZURE_CONTAINER_REGISTRY }}/frontend:${{ inputs.image_tag }} ./frontend/
-          docker push ${{ secrets.AZURE_CONTAINER_REGISTRY }}/frontend:${{ inputs.image_tag }}
-
       - name: Set Kubernetes context
         uses: azure/aks-set-context@v3
         with:
@@ -55,3 +45,7 @@ jobs:
         run: |
           cd k8s/
           kubectl apply -f frontend.yaml
+          kubectl set image deployment/frontend frontend=${{ secrets.AZURE_CONTAINER_REGISTRY }}/frontend:${{ inputs.image_tag }}
+          kubectl set env deployment/frontend \
+            PRODUCT_API_URL=http://${{ inputs.product_api_ip }}:80 \
+            ORDER_API_URL=http://${{ inputs.order_api_ip }}:80
