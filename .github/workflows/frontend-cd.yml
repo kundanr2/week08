@@ -1,7 +1,7 @@
 name: CD - Deploy Frontend to AKS
 
 on:
-  workflow_call: # Only callable by frontend-ci
+  workflow_call:
     inputs:
       product_api_ip:
         required: true
@@ -32,7 +32,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Inject Backend IPs into Frontend main.js
+      - name: Inject Backend IPs into frontend config
         run: |
           sed -i "s|_PRODUCT_API_URL_|${{ inputs.product_api_ip }}|g" frontend/main.js
           sed -i "s|_ORDER_API_URL_|${{ inputs.order_api_ip }}|g" frontend/main.js
@@ -48,5 +48,7 @@ jobs:
           resource-group: ${{ inputs.aks_resource_group }}
           cluster-name: ${{ inputs.aks_cluster_name }}
 
-      - name: Deploy Frontend to AKS
-        run: kubectl apply -f k8s/frontend.yaml
+      - name: Deploy Frontend
+        run: |
+          cd k8s/
+          kubectl apply -f frontend.yaml
