@@ -1,18 +1,19 @@
 name: Backend CI - Test, Build and Push Images to ACR
 
 on:
-  # Trigger on pull requests into development branch
+  # Trigger on pull requests into main branch
   pull_request:
     branches:
-      - development
+      - main
     paths:
       - 'backend/**'
       - '.github/workflows/backend_ci.yml'
 
-  # Trigger on pushes to main branch
+  # Trigger on pushes to main or development branches
   push:
     branches:
       - main
+      - development
     paths:
       - 'backend/**'
       - '.github/workflows/backend_ci.yml'
