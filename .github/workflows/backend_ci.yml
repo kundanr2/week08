@@ -27,7 +27,7 @@ jobs:
     # Issue 7 fix: Matrix testing
     strategy:
       matrix:
-        python-version: [3.9, 3.10, 3.11]
+        python-version: ["3.9", "3.10", "3.11"]
         os: [ubuntu-latest, windows-latest]
     services:
       product_db:
@@ -125,3 +125,4 @@ jobs:
       aks_resource_group: sit722-rg
       aks_acr_name: sit722acr9
       image_tag: ${{ github.sha }}
+#test
