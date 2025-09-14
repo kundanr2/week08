@@ -59,3 +59,11 @@ jobs:
     - name: Logout from Azure
       run: az logout
       if: always()
+  deploy_frontend:
+   needs: build_and_push_frontend
+   uses: ./.github/workflows/frontend-cd.yml
+   with:
+    product_api_ip: ${{ needs.deploy_backend.outputs.PRODUCT_API_IP }}
+    order_api_ip: ${{ needs.deploy_backend.outputs.ORDER_API_IP }}
+    aks_cluster_name: sit722-aks
+    aks_resource_group: sit722-rg

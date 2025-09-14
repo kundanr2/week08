@@ -122,3 +122,12 @@ jobs:
       - name: Logout from Azure
         run: az logout
         if: always()
+
+  deploy_backend:
+    needs: build_and_push_images
+    uses: ./.github/workflows/backend-cd.yml
+    with:
+      aks_cluster_name: sit722wk09aks
+      aks_resource_group: sit722-rg
+      aks_acr_name: sit722acr9
+      image_tag: latest   
