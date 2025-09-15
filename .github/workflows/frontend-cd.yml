@@ -15,7 +15,7 @@ on:
       aks_resource_group:
         required: true
         type: string
-      aks_acr_name:              # 👈 added to pass ACR name (like backend-cd.yml)
+      aks_acr_name:              # 👈 ACR name passed in
         required: true
         type: string
       image_tag:
@@ -38,6 +38,16 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Inject Backend IPs into frontend code
+        run: |
+          sed -i "s|_PRODUCT_API_URL_|http://${{ inputs.product_api_ip }}:8000|g" frontend/main.js
+          sed -i "s|_ORDER_API_URL_|http://${{ inputs.order_api_ip }}:8001|g" frontend/main.js
+
+      - name: Build and Push Frontend Image
+        run: |
+          docker build -t ${{ inputs.aks_acr_name }}.azurecr.io/frontend:${{ inputs.image_tag }} ./frontend/
+          docker push ${{ inputs.aks_acr_name }}.azurecr.io/frontend:${{ inputs.image_tag }}
+
       - name: Set Kubernetes context
         uses: azure/aks-set-context@v3
         with:
@@ -48,9 +58,4 @@ jobs:
         run: |
           cd k8s/
           kubectl apply -f frontend.yaml
-          # ✅ Use full ACR path for image update
-          kubectl set image deployment/frontend frontend-container=${{ inputs.aks_acr_name }}.azurecr.io/frontend:${{ inputs.image_tag }}
-          # ✅ Inject backend service IPs into environment variables
-          kubectl set env deployment/frontend \
-            PRODUCT_API_URL=http://${{ inputs.product_api_ip }}:80 \
-            ORDER_API_URL=http://${{ inputs.order_api_ip }}:80
+          kubectl set image deployment/frontend frontend-container=${{ inputs.aks_acr_name }}.azurec
