@@ -16,7 +16,9 @@ spec:
     spec:
       containers:
       - name: frontend-container
-        image: sit722acr9.azurecr.io/frontend:latest   # ✅ workflow will override tag
+        development
+        image: sit722acr9.azurecr.io/frontend:latest   # ✅ workflow will override ta
+        main
         imagePullPolicy: Always
         ports:
         - containerPort: 80
