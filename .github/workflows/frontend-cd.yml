@@ -45,7 +45,7 @@ jobs:
         run: |
           cd k8s/
           kubectl apply -f frontend.yaml
-          kubectl set image deployment/frontend frontend=${{ secrets.AZURE_CONTAINER_REGISTRY }}/frontend:${{ inputs.image_tag }}
+          kubectl set image deployment/frontend frontend-container=${{ secrets.AZURE_CONTAINER_REGISTRY }}/frontend:${{ inputs.image_tag }}
           kubectl set env deployment/frontend \
-            PRODUCT_API_URL=http://${{ inputs.product_api_ip }}:80 \
-            ORDER_API_URL=http://${{ inputs.order_api_ip }}:80
+           PRODUCT_API_URL=http://${{ inputs.product_api_ip }}:80 \
+           ORDER_API_URL=http://${{ inputs.order_api_ip }}:80
