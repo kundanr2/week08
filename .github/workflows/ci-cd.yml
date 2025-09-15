@@ -176,8 +176,9 @@ jobs:
     with:
       product_api_ip: ${{ needs.deploy_backend.outputs.PRODUCT_API_IP }}
       order_api_ip: ${{ needs.deploy_backend.outputs.ORDER_API_IP }}
-      aks_cluster_name: sit722wk09aks   # fixed to match real cluster
+      aks_cluster_name: sit722wk09aks   # ✅ matches real cluster
       aks_resource_group: sit722-rg
+      aks_acr_name: sit722acr9          # ✅ new, passed to frontend workflow
       image_tag: ${{ github.sha }}
     secrets:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}

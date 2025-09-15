@@ -15,6 +15,9 @@ on:
       aks_resource_group:
         required: true
         type: string
+      aks_acr_name:              # 👈 added to pass ACR name (like backend-cd.yml)
+        required: true
+        type: string
       image_tag:
         required: true
         type: string
@@ -45,7 +48,9 @@ jobs:
         run: |
           cd k8s/
           kubectl apply -f frontend.yaml
-          kubectl set image deployment/frontend frontend-container=${{ secrets.AZURE_CONTAINER_REGISTRY }}/frontend:${{ inputs.image_tag }}
+          # ✅ Use full ACR path for image update
+          kubectl set image deployment/frontend frontend-container=${{ inputs.aks_acr_name }}.azurecr.io/frontend:${{ inputs.image_tag }}
+          # ✅ Inject backend service IPs into environment variables
           kubectl set env deployment/frontend \
-           PRODUCT_API_URL=http://${{ inputs.product_api_ip }}:80 \
-           ORDER_API_URL=http://${{ inputs.order_api_ip }}:80
+            PRODUCT_API_URL=http://${{ inputs.product_api_ip }}:80 \
+            ORDER_API_URL=http://${{ inputs.order_api_ip }}:80
