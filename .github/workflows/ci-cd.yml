@@ -162,11 +162,16 @@ jobs:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
 
+      - name: Inject Backend IPs into frontend code
+        run: |
+          sed -i "s|_PRODUCT_API_URL_|http://${{ needs.deploy_backend.outputs.PRODUCT_API_IP }}:8000|g" frontend/main.js
+          sed -i "s|_ORDER_API_URL_|http://${{ needs.deploy_backend.outputs.ORDER_API_IP }}:8001|g" frontend/main.js
+
       - name: Build and Push Frontend Image
         run: |
           docker build -t ${{ env.ACR_LOGIN_SERVER }}/frontend:${{ env.IMAGE_TAG }} ./frontend/
           docker push ${{ env.ACR_LOGIN_SERVER }}/frontend:${{ env.IMAGE_TAG }}
-
+          
   # -----------------------------
   # 5. Frontend - Deploy to AKS
   # -----------------------------
