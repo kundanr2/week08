@@ -1,23 +1,23 @@
 name: CD - Deploy Frontend to AKS
 
 on:
-  workflow_call: # Only callable by frontend-ci
+  workflow_call:
     inputs:
-      product_api_ip:
-        required: true
-        type: string
-      order_api_ip:
-        required: true
-        type: string
       aks_cluster_name:
         required: true
         type: string
       aks_resource_group:
         required: true
         type: string
+      aks_acr_name:
+        required: true
+        type: string
       image_tag:
         required: true
         type: string
+    secrets:
+      AZURE_CREDENTIALS:
+        required: true
 
 jobs:
   deploy_frontend:
@@ -32,21 +32,14 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Inject Backend IPs into Frontend main.js
-        run: |
-          sed -i "s|_PRODUCT_API_URL_|${{ inputs.product_api_ip }}|g" frontend/main.js
-          sed -i "s|_ORDER_API_URL_|${{ inputs.order_api_ip }}|g" frontend/main.js
-
-      - name: Build and Push Frontend Image
-        run: |
-          docker build -t ${{ secrets.AZURE_CONTAINER_REGISTRY }}/frontend:${{ inputs.image_tag }} ./frontend/
-          docker push ${{ secrets.AZURE_CONTAINER_REGISTRY }}/frontend:${{ inputs.image_tag }}
-
       - name: Set Kubernetes context
         uses: azure/aks-set-context@v3
         with:
           resource-group: ${{ inputs.aks_resource_group }}
           cluster-name: ${{ inputs.aks_cluster_name }}
 
-      - name: Deploy Frontend to AKS
-        run: kubectl apply -f k8s/frontend.yaml
+      - name: Deploy Frontend
+        run: |
+          cd k8s/
+          kubectl apply -f frontend.yaml
+          kubectl set image deployment/frontend frontend-container=${{ inputs.aks_acr_name }}.azurecr.io/frontend:${{ inputs.image_tag }}
